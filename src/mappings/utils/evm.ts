@@ -31,7 +31,6 @@ export const isTransfer = (addrOne: string, addrTwo: string) => {
 
 //   return Interaction.SEND
 // }
-
 export function decode721Transfer(event: Context): erc721.Transfer0Event {
   return erc721.events["Transfer(address,address,uint256)"].decode(event)
 }

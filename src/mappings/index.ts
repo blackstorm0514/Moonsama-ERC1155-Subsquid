@@ -1,45 +1,25 @@
-import { BlockHandlerContext, Store } from '@subsquid/substrate-processor'
-import md5 from 'md5'
-// import { isERC721 } from '../contract'
-// import {
-//   CollectionEntity as CE, CollectionType, Event,
-//   MetadataEntity as Metadata,
-//   NFTEntity as NE
-// } from '../model'
-// import { ContractsMap } from '../processable'
-// import { created, plsBe, real, remintable } from './utils/consolidator'
-// import { BIGINT_ZERO, EMPTY_ADDRESS } from './utils/constants'
-import { create, get, getOrCreate } from './utils/entity'
-// import { decode1155MultiTransfer, decode1155SingleTransfer, RealTransferEvent, whatIsThisTransfer } from './utils/evm'
-import { decode721Transfer,} from './utils/evm'
-import { createFungibleTokenId, createTokenId, unwrap } from './utils/extract'
-// import {
-//   getBurnTokenEvent, getCreateCollectionEvent,
-//   getCreateTokenEvent, getMultiBurnTokenEvent, getMultiCreateTokenEvent, getMultiTransferTokenEvent, getSingleBurnTokenEvent, getSingleCreateTokenEvent, getSingleTransferTokenEvent, getTokenUriChangeEvent, getTransferTokenEvent
-// } from './utils/getters'
-import { isEmpty } from './utils/helper'
-import logger, { logError, transferDebug } from './utils/logger'
-import { fetchMetadata } from './utils/metadata'
-// import { findAll1155Tokens } from './utils/query'
-// import {
-//   attributeFrom,
-//   BaseCall, Context, ensure,
-//   eventFrom,
-//   eventId,
-//   Interaction, Optional,
-//   TokenMetadata
-// } from './utils/types'
+import { create, get, getOrCreate } from "./utils/entity";
 import {
-  attributeFrom,
-  Context
-} from './utils/types'
-// import { tokenUriOf } from '../contract'
-import { bigintOf, contractOf, mapAndMatch } from './utils/extract'
-import { ethers } from "ethers"
-import { Owner, Token, Transfer, Metadata, Attribute, Contract } from "../model";
-import { provider, getTokenURI } from "../contract"
-import * as erc721 from "../abi/erc721";
-import { sanitizeIpfsUrl , api } from "./utils/metadata"
+  decode1155MultiTransfer,
+  decode1155SingleTransfer,
+  RealTransferEvent,
+} from "./utils/evm";
+import logger, { logError, transferDebug } from "./utils/logger";
+import { attributeFrom, Context } from "./utils/types";
+import { bigintOf, contractOf } from "./utils/extract";
+import { ethers } from "ethers";
+import {
+  Token,
+  Owner,
+  Contract,
+  Transfer,
+  TokenOwner,
+  Metadata,
+  Attribute,
+} from "../model";
+import { provider, getTokenURI } from "../contract";
+import * as erc1155 from "../abi/erc1155";
+import { sanitizeIpfsUrl, api } from "./utils/metadata";
 
 // async function handleMetadata(
 //   id: string,
@@ -69,346 +49,176 @@ import { sanitizeIpfsUrl , api } from "./utils/metadata"
 //   return final
 // }
 
-// export async function handleCollectionCreate(context: Context): Promise<void> {
-//   logger.pending(`[COLECTTION++]: ${context.substrate.block.height}`)
-//   const event = unwrap(context, getCreateCollectionEvent)
-//   // logger.debug(`collection: ${JSON.stringify(event, serializer, 2)}`)
-//   const final = await getOrCreate<CE>(context.store, CE, event.id, {})
-//   plsBe(remintable, final)
-
-//   final.id = event.id
-//   final.issuer = event.caller
-//   final.currentOwner = event.caller
-//   final.blockNumber = BigInt(event.blockNumber)
-//   // final.metadata = event.metadata || 'ipfs://ipfs/bafkreiazeqysfmeuzqcnjp6rijxfu5h7sj3t4h2rxehi7rlyegzfy7lxeq'
-//   final.burned = false
-//   final.createdAt = event.timestamp
-//   final.updatedAt = event.timestamp
-
-
-//   // logger.debug(`metadata: ${event.metadata}`)
-
-//   if (final.metadata) {
-//     const metadata = await handleMetadata(final.metadata, context.store)
-//     final.meta = metadata
-//     final.name = metadata?.name
-//   }
-
-//   logger.success(`[COLLECTION] ${final.id}`)
-//   await context.store.save(final)
-//   // await createCollectionEvent(final, Interaction.MINT, event, '', context.store)
-// }
-
-// export async function handleTokenCreate(context: Context): Promise<void> {
-//   logger.pending(`[NFT++]: ${context.substrate.block.height}`)
-//   const event = unwrap(context, getCreateTokenEvent)
-//   // metaLog('Non-fungible', event)
-//   const id = createTokenId(event.collectionId, event.sn)
-//   const collection = ensure<CE>(
-//     await get<CE>(context.store, CE, event.collectionId)
-//   )
-//   const final = await getOrCreate<NE>(context.store, NE, id, {})
-//   plsBe(real, collection)
-//   plsBe(remintable, final)
-
-//   final.id = id
-//   final.hash = md5(id)
-//   final.issuer = event.caller
-//   final.currentOwner = event.caller
-//   final.blockNumber = BigInt(event.blockNumber)
-//   final.collection = collection
-//   final.sn = event.sn
-//   final.price = BigInt(0);
-//   final.metadata = await event.metadata
-//   final.burned = false
-//   final.createdAt = event.timestamp
-//   final.updatedAt = event.timestamp
-//   final.count = event.count
-
-//   logger.debug(`metadata: ${final.metadata}`)
-
-//   if (final.metadata) {
-//     const metadata = await handleMetadata(final.metadata, context.store)
-//     final.meta = metadata
-//     final.name = metadata?.name
-//   }
-
-//   logger.success(`[MINT] ${final.id}`)
-//   await context.store.save(final)
-//   await createEvent(final, Interaction.MINTNFT, event, '', context.store)
-// }
-
-// export async function handleSingleTokenCreate(context: Context, fromTransfer: boolean = false): Promise<void> {
-//   if (!fromTransfer) {
-//     logger.pending(`[Single NFT++]: ${context.substrate.block.height}`)
-//   }
-//   const event = unwrap(context, getSingleCreateTokenEvent)
-//   // metaLog('Fungible', event)
-//   const id = createFungibleTokenId(event.collectionId, event.sn, event.caller)
-//   const collection = ensure<CE>(
-//     await get<CE>(context.store, CE, event.collectionId)
-//   )
-//   const final = await getOrCreate<NE>(context.store, NE, id, {})
-//   plsBe(real, collection)
-
-//   if (created(final)) {
-//     final.id = id
-//     final.hash = md5(id)
-//     final.issuer = event.caller
-//     final.currentOwner = event.caller
-//     final.blockNumber = BigInt(event.blockNumber)
-//     final.collection = collection
-//     final.sn = event.sn
-//     final.price = BigInt(0);
-//     final.metadata = await event.metadata
-//     final.burned = false
-//     final.createdAt = event.timestamp
-//     final.updatedAt = event.timestamp
-//     final.count = event.count
-  
-//     logger.debug(`metadata: ${final.metadata}`)
-  
-//     if (final.metadata) {
-//       const metadata = await handleMetadata(final.metadata, context.store)
-//       final.meta = metadata
-//       final.name = metadata?.name
-//     }
-//     logger.success(`[MINT] ${final.id}`)
-//   } else {
-//     final.count += event.count
-//     final.burned = false
-//     logger.success(`[TRANSFER] Add ${event.count} tokens to ${event.caller}`)
-//   }
-
-  
-//   await context.store.save(final)
-//   await createEvent(final, Interaction.MINTNFT, event, '', context.store)
-// }
-
-// export async function handleMultiTokenCreate(context: Context, fromTransfer: boolean = false): Promise<void> {
-//   if (!fromTransfer) {
-//     logger.pending(`[Single NFT++]: ${context.substrate.block.height}`)
-//   }
-//   const event = unwrap(context, getMultiCreateTokenEvent)
-//   // metaLog('Fungible', event)
-//   const collection = ensure<CE>(
-//     await get<CE>(context.store, CE, event.collectionId)
-//   )
-
-//   plsBe(real, collection)
-
-//   for (const index in event.snList) {
-//     const id = createFungibleTokenId(event.collectionId, event.snList[index], event.caller)
-//     const final = await getOrCreate<NE>(context.store, NE, id, {})
-//     if (created(final)) {
-//       final.id = id
-//       final.hash = md5(id)
-//       final.issuer = event.caller
-//       final.currentOwner = event.caller
-//       final.blockNumber = BigInt(event.blockNumber)
-//       final.collection = collection
-//       final.sn = event.snList[index]
-//       final.price = BigInt(0);
-//       final.metadata = await (event.metadata[index])
-//       final.burned = false
-//       final.createdAt = event.timestamp
-//       final.updatedAt = event.timestamp
-//       final.count = event.countList[index]
-    
-//       logger.debug(`metadata: ${final.metadata}`)
-    
-//       if (final.metadata) {
-//         const metadata = await handleMetadata(final.metadata, context.store)
-//         final.meta = metadata
-//         final.name = metadata?.name
-//       }
-//       logger.success(`[MINT] ${final.id}`)
-//     } else {
-//       final.count += event.countList[index]
-//       final.burned = false
-//       logger.success(`[TRANSFER] Add ${event.countList[index]} tokens to ${event.caller}`)
-//     }
-  
-    
-//     await context.store.save(final)
-//     await createEvent(final, Interaction.MINTNFT, event, '', context.store)
-//   }
-// }
-
-// export async function handleSingleTokenTransfer(context: Context): Promise<void> {
-//   logger.pending(`[SEND]: ${context.substrate.block.height}`)
-//   const event = unwrap(context, getSingleTransferTokenEvent)
-//   if (event.count === BIGINT_ZERO) {
-//     logger.warn(`[SEND] ${event.caller} sent 0 tokens`)
-//     return
-//   }
-
-//   logger.debug(`[SEND]: DO BURN`)
-//   await handleSingleTokenBurn(context, true)
-//   logger.debug(`[SEND]: DO CREATE`)
-//   await handleSingleTokenCreate(context, true)
-//   logger.success(
-//     `[SEND] from ${event.caller} to ${event.to}`
-//   )
-// }
-
-// export async function handleMultiTokenTransfer(context: Context): Promise<void> {
-//   logger.pending(`[SEND]: ${context.substrate.block.height}`)
-//   const event = unwrap(context, getMultiTransferTokenEvent)
-
-//   logger.debug(`[SEND]: DO BURN`)
-//   await handleMultiTokenBurn(context, true)
-//   logger.debug(`[SEND]: DO CREATE`)
-//   await handleMultiTokenCreate(context, true)
-//   logger.success(
-//     `[SEND] from ${event.caller} to ${event.to}`
-//   )
-// }
-
-// export async function handleSingleTokenBurn(context: Context, fromTransfer: boolean = false): Promise<void> {
-//   if (!fromTransfer) {
-//     logger.pending(`[BURN]: ${context.substrate.block.height}`)
-//   }
-//   const event = unwrap(context, getSingleBurnTokenEvent)
-//   // logger.debug(`burn: ${JSON.stringify(event, serializer, 2)}`)
-//   const id = createFungibleTokenId(event.collectionId, event.sn, event.caller)
-//   const entity = ensure<NE>(await get(context.store, NE, id))
-//   plsBe(real, entity)
-
-//   entity.count -= event.count
-
-//   if (entity.count === BIGINT_ZERO) {
-//     entity.burned = true
-//   }
-
-//   if (!fromTransfer) {
-//     logger.success(`[BURN] ${id} by ${event.caller}`)
-//   } else {
-//     logger.success(`[TRANSFER] Substract ${event.count} tokens from ${event.caller}`)
-//   }
-  
-//   await context.store.save(entity)
-//   const meta = String(event.count)
-//   await createEvent(entity, Interaction.CONSUME, event, meta, context.store)
-// }
-
-// export async function handleMultiTokenBurn(context: Context, fromTransfer: boolean = false): Promise<void> {
-//   if (!fromTransfer) {
-//     logger.pending(`[BURN]: ${context.substrate.block.height}`)
-//   }
-//   const event = unwrap(context, getMultiBurnTokenEvent)
-//   // logger.debug(`burn: ${JSON.stringify(event, serializer, 2)}`)
-
-//   for (const index in event.snList) {
-//     const id = createFungibleTokenId(event.collectionId, event.snList[index], event.caller)
-//     const entity = ensure<NE>(await get(context.store, NE, id))
-//     plsBe(real, entity)
-
-//     entity.count -= event.countList[index]
-
-//     if (entity.count === BIGINT_ZERO) {
-//       entity.burned = true
-//     }
-
-//     if (!fromTransfer) {
-//       logger.success(`[BURN] ${id} by ${event.caller}`)
-//     } else {
-//       logger.success(`[TRANSFER] Substract ${event.countList[index]} tokens from ${event.caller}`)
-//     }
-    
-//     await context.store.save(entity)
-//     const meta = String(event.countList[index])
-//     await createEvent(entity, Interaction.CONSUME, event, meta, context.store)
-//   }
-// }
-
-// export async function handleTokenTransfer(context: Context): Promise<void> {
-//   logger.pending(`[SEND]: ${context.substrate.block.height}`)
-//   const event = unwrap(context, getTransferTokenEvent)
-//   logger.pending(`[event]: ${event}`)
-//   const blockNumber = context.substrate.block.height.toString();
-//   const timestamp = context.substrate.block.timestamp.toString();
-//   const txHash = context.txHash;
-//   const {from, to, tokenId } = decode721Transfer(context)
-//   const collectionId = contractOf(context)
-//   logger.debug(`blockNumber: ${blockNumber}`)
-//   logger.debug(`timestamp: ${timestamp}`)
-//   logger.debug(`txHash: ${txHash}`)
-//   logger.debug(`from: ${from}`)
-//   logger.debug(`to: ${to}`)
-//   logger.debug(`tokenId: ${tokenId}`)
-//   logger.debug(`collectionId: ${collectionId}`)
-//   const id = createTokenId(event.collectionId, event.sn)
-//   const entity = ensure<NE>(await get(context.store, NE, id))
-//   plsBe(real, entity)
-
-//   const currentOwner = entity.currentOwner
-//   entity.currentOwner = event.to
-//   logger.success(
-//     `[SEND] ${id} from ${event.caller} to ${event.to}`
-//   )
-//   await context.store.save(entity)
-//   await createEvent(entity, Interaction.SEND, event, event.to || '', context.store, currentOwner)
-// }
-
-export async function saveTransfers(context: Context):Promise<void>  {
+export async function saveSingleTransfers(context: Context): Promise<void> {
   const blockNumber = context.substrate.block.height.toString();
   const timestamp = context.substrate.block.timestamp.toString();
   const txHash = context.txHash;
-  const {from, to, tokenId } = decode721Transfer(context)
-  const contractAddress = contractOf(context)
+  const { operator, from, to, id, value } = decode1155SingleTransfer(context);
+  let amount = value;
+  let tokenId = id;
+  let tokenIdString = tokenId.toString();
+  const contractAddress = contractOf(context);
   const eventId = context.substrate.event.id;
 
-    let previousOwner = await get(context.store, Owner, from);
+  let previousOwner = await get(context.store, Owner, from);
+  if (previousOwner == null) {
+    previousOwner = new Owner({ id: from.toLowerCase() });
+  }
+
+  let currentOwner = await get(context.store, Owner, to);
+  if (currentOwner == null) {
+    currentOwner = new Owner({ id: to.toLowerCase() });
+  }
+
+  let contractData = await get(context.store, Contract, contractAddress);
+  const contract = new ethers.Contract(contractAddress, erc1155.abi, provider);
+  if (contractData == null) {
+    let name = await contract.name();
+    let symbol = await contract.symbol();
+    contractData = new Contract({
+      id: contractAddress,
+      name: name,
+      symbol: symbol,
+    });
+  }
+
+  let tokenURI: string = await getTokenURI(contract, tokenIdString);
+
+  let metadata = await get(context.store, Metadata, tokenIdString);
+  if (metadata == null) {
+    const { status, data } = await api.get(sanitizeIpfsUrl(tokenURI));
+    metadata = new Metadata({
+      id: tokenId.toHexString(),
+      description: data.description || "",
+      name: data.name || contractData.name,
+      image: data.image,
+      animationUrl: data.animation_url,
+      attributes: data.attributes?.map(attributeFrom) || [],
+    });
+  }
+
+  let token = await get(
+    context.store,
+    Token,
+    contractAddress + ":" + tokenIdString
+  );
+  if (token == null) {
+    token = new Token({
+      id: contractAddress + ":" + tokenIdString,
+      numericId: BigInt(tokenIdString),
+      uri: tokenURI,
+      meta: metadata,
+      contract: contractData,
+    });
+  }
+
+  let senderTokenOwnerId = from.concat("-").concat(tokenIdString);
+  let senderTokenOwner = await get(
+    context.store,
+    TokenOwner,
+    senderTokenOwnerId
+  );
+  if (senderTokenOwner == null) {
+    senderTokenOwner = new TokenOwner({
+      id: senderTokenOwnerId,
+      balance: 0n,
+    });
+  }
+  senderTokenOwner.owner = previousOwner;
+  senderTokenOwner.token = token;
+
+  // if we mint tokens, we don't mark it
+  // total minted ever can be caluclated by totalSupply + burned amount
+  if (previousOwner.id != "0x0000000000000000000000000000000000000000") {
+    senderTokenOwner.balance = senderTokenOwner.balance - bigintOf(amount);
+  }
+
+  let recipientTokenOwnerId = to.concat("-").concat(tokenIdString);
+  let recipientTokenOwner = await get(
+    context.store,
+    TokenOwner,
+    recipientTokenOwnerId
+  );
+  if (recipientTokenOwner == null) {
+    recipientTokenOwner = new TokenOwner({
+      id: recipientTokenOwnerId,
+      balance: 0n,
+    });
+  }
+
+  recipientTokenOwner.owner = currentOwner;
+  recipientTokenOwner.token = token;
+
+  // in case of 0x0000000000000000000000000000000000000000 it's the burned amount
+  recipientTokenOwner.balance = recipientTokenOwner.balance + bigintOf(amount);
+
+  let transfer = await get(context.store, Transfer, eventId);
+  if (transfer == null) {
+    transfer = new Transfer({
+      id: eventId,
+      block: BigInt(blockNumber),
+      timestamp: BigInt(timestamp),
+      transactionHash: txHash,
+      from: previousOwner,
+      to: currentOwner,
+      token,
+    });
+  }
+
+  await context.store.save(previousOwner);
+  await context.store.save(currentOwner);
+  await context.store.save(senderTokenOwner);
+  await context.store.save(recipientTokenOwner);
+  await context.store.save(contractData);
+  await context.store.save(metadata);
+  await context.store.save(token);
+  await context.store.save(transfer);
+}
+
+export async function saveMultipleTransfers(context: Context): Promise<void> {
+  const blockNumber = context.substrate.block.height.toString();
+  const timestamp = context.substrate.block.timestamp.toString();
+  const txHash = context.txHash;
+  const { operator, from, to, ids, values } = decode1155MultiTransfer(context);
+  let amounts = values;
+  let tokenIds = ids;
+  const contractAddress = contractOf(context);
+  const eventId = context.substrate.event.id;
+
+  let previousOwner = await get(context.store, Owner, from);
+  let currentOwner = await get(context.store, Owner, to);
+
+  for (let i = 0; i < tokenIds.length; i++) {
+    let tokenId = tokenIds[i];
+    let tokenIdString = tokenId.toString();
+    let amount = amounts[i];
+
     if (previousOwner == null) {
-      previousOwner = new Owner({ id: from.toLowerCase(), balance: 0n });
+      previousOwner = new Owner({ id: from.toLowerCase() });
     }
-
-    let currentOwner = await get(context.store, Owner, to);
     if (currentOwner == null) {
-      currentOwner = new Owner({ id: to.toLowerCase(), balance: 0n });
+      currentOwner = new Owner({ id: to.toLowerCase() });
     }
-
-    if (
-      previousOwner.balance != null &&
-      previousOwner.balance > BigInt(0) &&
-      previousOwner.id != "0x0000000000000000000000000000000000000000"
-    ) {
-      previousOwner.balance = previousOwner.balance - BigInt(1);
-    }
-
-    if (currentOwner.balance != null) {
-      currentOwner.balance = currentOwner.balance + BigInt(1);
-    }
-
-
 
     let contractData = await get(context.store, Contract, contractAddress);
     const contract = new ethers.Contract(
       contractAddress,
-      erc721.abi,
+      erc1155.abi,
       provider
     );
     if (contractData == null) {
-        let name = await contract.name();
+      let name = await contract.name();
       let symbol = await contract.symbol();
-      let totalSupply = await contract.totalSupply();
-      let contractURI = await contract.contractURI();
       contractData = new Contract({
         id: contractAddress,
-        address: contractAddress,
         name: name,
         symbol: symbol,
-        totalSupply: totalSupply,
-        decimals: 0,
-        contractURI: contractURI,
-        contractURIUpdated: BigInt(timestamp),
       });
     }
 
-    let tokenURI:string = await getTokenURI(contract, tokenId.toString());
+    let tokenURI: string = await getTokenURI(contract, tokenIdString);
 
-    let metadata = await get(context.store,Metadata, tokenId.toString());
+    let metadata = await get(context.store, Metadata, tokenIdString);
     if (metadata == null) {
       const { status, data } = await api.get(sanitizeIpfsUrl(tokenURI));
       metadata = new Metadata({
@@ -421,215 +231,92 @@ export async function saveTransfers(context: Context):Promise<void>  {
       });
     }
 
-    let token = await get(context.store, Token , contractAddress+':'+tokenId.toString());
+    let token = await get(
+      context.store,
+      Token,
+      contractAddress + ":" + tokenIdString
+    );
     if (token == null) {
       token = new Token({
-        id: contractAddress+':'+tokenId.toString(),
-        numericId: BigInt(tokenId.toString()),
+        id: contractAddress + ":" + tokenIdString,
+        numericId: BigInt(tokenIdString),
         uri: tokenURI,
-        meta:metadata,
+        meta: metadata,
         contract: contractData,
       });
     }
-    token.owner = currentOwner;
 
+    let senderTokenOwnerId = from.concat("-").concat(tokenIdString);
+    let senderTokenOwner = await get(
+      context.store,
+      TokenOwner,
+      senderTokenOwnerId
+    );
+    if (senderTokenOwner == null) {
+      senderTokenOwner = new TokenOwner({
+        id: senderTokenOwnerId,
+        balance: 0n,
+      });
+    }
+    senderTokenOwner.owner = previousOwner;
+    senderTokenOwner.token = token;
 
-    const transfer = new Transfer({
-      id: eventId,
-      block: BigInt(blockNumber),
-      timestamp: BigInt(timestamp),
-      transactionHash: txHash,
-      from: previousOwner,
-      to: currentOwner,
-      token,
-    });
+    // if we mint tokens, we don't mark it
+    // total minted ever can be caluclated by totalSupply + burned amount
+    if (previousOwner.id != "0x0000000000000000000000000000000000000000") {
+      senderTokenOwner.balance = senderTokenOwner.balance - bigintOf(amount);
+    }
 
-    await context.store.save(previousOwner) 
-    await context.store.save(currentOwner) 
-    await context.store.save(contractData) 
-    await context.store.save(metadata) 
-    await context.store.save(token) 
-    await context.store.save(transfer) 
+    let recipientTokenOwnerId = to.concat("-").concat(tokenIdString);
+    let recipientTokenOwner = await get(
+      context.store,
+      TokenOwner,
+      recipientTokenOwnerId
+    );
+    if (recipientTokenOwner == null) {
+      recipientTokenOwner = new TokenOwner({
+        id: recipientTokenOwnerId,
+        balance: 0n,
+      });
+    }
+
+    recipientTokenOwner.owner = currentOwner;
+    recipientTokenOwner.token = token;
+
+    // in case of 0x0000000000000000000000000000000000000000 it's the burned amount
+    recipientTokenOwner.balance =
+      recipientTokenOwner.balance + bigintOf(amount);
+
+    let transfer = await get(context.store, Transfer, eventId);
+    if (transfer == null) {
+      transfer = new Transfer({
+        id: eventId,
+        block: BigInt(blockNumber),
+        timestamp: BigInt(timestamp),
+        transactionHash: txHash,
+        from: previousOwner,
+        to: currentOwner,
+        token,
+      });
+    }
+
+    await context.store.save(previousOwner);
+    await context.store.save(currentOwner);
+    await context.store.save(senderTokenOwner);
+    await context.store.save(recipientTokenOwner);
+    await context.store.save(contractData);
+    await context.store.save(metadata);
+    await context.store.save(token);
+    await context.store.save(transfer);
+  }
 }
 
-
-// export async function handleTokenBurn(context: Context): Promise<void> {
-//   logger.pending(`[BURN]: ${context.substrate.block.height}`)
-//   const event = unwrap(context, getBurnTokenEvent)
-//   // logger.debug(`burn: ${JSON.stringify(event, serializer, 2)}`)
-//   const id = createTokenId(event.collectionId, event.sn)
-//   const entity = ensure<NE>(await get(context.store, NE, id))
-//   plsBe(real, entity)
-
-//   entity.burned = true
-//   entity.currentOwner = EMPTY_ADDRESS
-
-//   logger.success(`[BURN] ${id} by ${event.caller}`)
-//   await context.store.save(entity)
-//   const meta = entity.metadata ?? ''
-//   await createEvent(entity, Interaction.CONSUME, event, meta, context.store)
-// }
-
-// async function createEvent(
-//   final: NE,
-//   interaction: Interaction,
-//   call: BaseCall,
-//   meta: string,
-//   store: Store,
-//   currentOwner?: string
-// ) {
-//   try {
-//     const newEventId = eventId(final.id, interaction)
-//     const event = create<Event>(
-//       Event,
-//       newEventId,
-//       eventFrom(interaction, call, meta, currentOwner)
-//     )
-//     event.nft = final
-//     await store.save(event)
-//   } catch (e) {
-//     logError(e, (e) =>
-//       logger.warn(`[[${interaction}]]: ${final.id} Reason: ${e.message}`)
-//     )
-//   }
-// }
-
-
-// export async function forceCreateContract(ctx: BlockHandlerContext) {
-//   const meta = await Promise.all(Object.values(ContractsMap).map(({ metadata }) => metadata).map(m => handleMetadata(m, ctx.store)))
-//   const contracts = Object.entries(ContractsMap).map(([id, contract], index) => {
-//     logger.pending(`Building`, id, contract.name)
-//     return new CE({
-//       id,
-//       ...contract,
-//       meta: meta[index]
-//     })
-//   })
-
-//   logger.complete('[FORCE] CONTRACTS', contracts.length)
-  
-//   await ctx.store.save(contracts);
-// }
-
-export async function mainFrame(ctx: Context): Promise<void> {
-  const transfer = decode721Transfer(ctx)
-  await saveTransfers(ctx)
-  // return technoBunker(ctx, transfer)
+export async function singleMainFrame(ctx: Context): Promise<void> {
+  const transfer = decode1155SingleTransfer(ctx);
+  await saveSingleTransfers(ctx);
 }
 
-
-// export function singleMainFrame(ctx: Context): Promise<void> {
-//   const transfer = decode1155SingleTransfer(ctx)
-//   return technoBunker(ctx, transfer, CollectionType.ERC1155)
-// }
-
-// export async function mutliMainFrame(ctx: Context): Promise<void> {
-//   const transfer = decode1155MultiTransfer(ctx)
-//   switch (whatIsThisTransfer(transfer)) {
-//     case Interaction.MINTNFT:
-//       transferDebug(Interaction.MINTNFT, transfer)
-//       await handleMultiTokenCreate(ctx)
-//       break
-//     case Interaction.SEND:
-//       transferDebug(Interaction.SEND, transfer)
-//       await handleMultiTokenTransfer(ctx)
-//       break
-//     case Interaction.CONSUME:
-//       transferDebug(Interaction.CONSUME, transfer)
-//       await handleMultiTokenBurn(ctx)
-//       break
-//     default:
-//       logger.warn(`Unknown transfer: ${JSON.stringify(transfer, null, 2)}`)
-//   }
-// }
-
-// async function technoBunker(ctx: Context, transfer: RealTransferEvent, type = CollectionType.ERC721) {
-//   switch (whatIsThisTransfer(transfer)) {
-//     case Interaction.MINTNFT:
-//       transferDebug(Interaction.MINTNFT, transfer)
-//       const createCb = isERC721(type) ? handleTokenCreate : handleSingleTokenCreate
-//       await createCb(ctx)
-//       break
-//     case Interaction.SEND:
-//       transferDebug(Interaction.SEND, transfer)
-//       const transferCb = isERC721(type) ? handleTokenTransfer : handleSingleTokenTransfer
-//       await transferCb(ctx)
-//       break
-//     case Interaction.CONSUME:
-//       transferDebug(Interaction.CONSUME, transfer)
-//       const burnCb = isERC721(type) ? handleTokenBurn : handleSingleTokenBurn
-//       await burnCb(ctx)
-//       break
-//     default:
-//       logger.warn(`Unknown transfer: ${JSON.stringify(transfer, null, 2)}`)
-//   }
-// }
-
-
-// export async function handleUriChnage(context: Context): Promise<void> {
-//   logger.pending(`[NEW URI]: ${context.substrate.block.height}`)
-//   const event = unwrap(context, getTokenUriChangeEvent)
-//   logger.debug('NEW URI', event.metadata)
-//   if (!event.metadata) {
-//     logger.warn(`No metadata for ${event.collectionId}`)
-//     return
-//   }
-//   const tokens = await findAll1155Tokens(context.store, event.collectionId, event.sn)
-//   const metadata = await handleMetadata(event.metadata, context.store)
-//   await context.store.save(metadata)
-//   tokens.forEach((token) => {
-//     token.metadata = event.metadata
-//     token.updatedAt = event.timestamp
-//     token.meta = metadata
-//   })
-//   // const entity = ensure<NE>(await get(context.store, NE, id))
-//   // plsBe(real, entity)
-
-//   await context.store.save(tokens);
-// }
-
-
-// export async function contractLogsHandler(
-//   ctx: EvmLogHandlerContext
-// ): Promise<void> {
-//   const transfer =
-//     erc721.events["Transfer(address,address,uint256)"].decode(ctx);
-
-//   let from = await ctx.store.get(Owner, transfer.from);
-//   if (from == null) {
-//     from = new Owner({ id: transfer.from, balance: 0n });
-//     await ctx.store.save(from);
-//   }
-
-//   let to = await ctx.store.get(Owner, transfer.to);
-//   if (to == null) {
-//     to = new Owner({ id: transfer.to, balance: 0n });
-//     await ctx.store.save(to);
-//   }
-
-//   let token = await ctx.store.get(Token, transfer.tokenId.toString());
-//   if (token == null) {
-//     token = new Token({
-//       id: transfer.tokenId.toString(),
-//       uri: await contract.tokenURI(transfer.tokenId),
-//       contract: await getContractEntity(ctx),
-//       owner: to,
-//     });
-//     await ctx.store.save(token);
-//   } else {
-//     token.owner = to;
-//     await ctx.store.save(token);
-//   }
-
-//   await ctx.store.save(
-//     new Transfer({
-//       id: ctx.txHash,
-//       token,
-//       from,
-//       to,
-//       timestamp: BigInt(ctx.substrate.block.timestamp),
-//       block: ctx.substrate.block.height,
-//       transactionHash: ctx.txHash,
-//     })
-//   );
-// }
+export async function mutliMainFrame(ctx: Context): Promise<void> {
+  const transfer = decode1155MultiTransfer(ctx);
+  await saveMultipleTransfers(ctx);
+}
