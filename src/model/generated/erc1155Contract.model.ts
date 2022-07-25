@@ -1,9 +1,9 @@
 import {Entity as Entity_, Column as Column_, PrimaryColumn as PrimaryColumn_, OneToMany as OneToMany_} from "typeorm"
-import {Token} from "./token.model"
+import {ERC1155Token} from "./erc1155Token.model"
 
 @Entity_()
-export class Contract {
-  constructor(props?: Partial<Contract>) {
+export class ERC1155Contract {
+  constructor(props?: Partial<ERC1155Contract>) {
     Object.assign(this, props)
   }
 
@@ -16,6 +16,6 @@ export class Contract {
   @Column_("text", {nullable: true})
   symbol!: string | undefined | null
 
-  @OneToMany_(() => Token, e => e.contract)
-  mintedTokens!: Token[]
+  @OneToMany_(() => ERC1155Token, e => e.contract)
+  mintedTokens!: ERC1155Token[]
 }

@@ -1,13 +1,13 @@
-type Token @entity {
+type ERC1155Token @entity {
   # {tokenID}
   id: ID!
   totalSupply: BigInt
   numericId: BigInt!
-  owners: [TokenOwner!]! @derivedFrom(field: "token")
+  owners: [ERC1155TokenOwner!]! @derivedFrom(field: "token")
   uri: String
   meta: Metadata
-  transfers: [Transfer!]! @derivedFrom(field: "token")
-  contract: Contract
+  transfers: [ERC1155Transfer!]! @derivedFrom(field: "token")
+  contract: ERC1155Contract
 }
 
 type Metadata @entity {
@@ -26,36 +26,78 @@ type Attribute @jsonField {
   value: String!
 }
 
-type Owner @entity {
+type ERC1155Owner @entity {
   # {owner address}
   id: ID!
-  ownedTokens: [TokenOwner!]! @derivedFrom(field: "owner")
+  ownedTokens: [ERC1155TokenOwner!]! @derivedFrom(field: "owner")
 }
 
-type TokenOwner @entity {
+type ERC1155TokenOwner @entity {
   # ${owner.id}-${token.id}
   id: ID! 
-  owner: Owner!
-  token: Token!
+  owner: ERC1155Owner!
+  token: ERC1155Token!
   balance: BigInt!
 }
 
-type Contract @entity {
+type ERC1155Contract @entity {
   # {contract address}
   id: ID!
   name: String
   symbol: String
-  mintedTokens: [Token!]! @derivedFrom(field: "contract")
+  mintedTokens: [ERC1155Token!]! @derivedFrom(field: "contract")
 }
 
-type Transfer @entity {
+type ERC1155Transfer @entity {
   # {txhash}-{tokenID}-{txlogindex}
   id: ID!
-  token: Token!
+  token: ERC1155Token!
   # Empty from is minting
-  from: Owner
+  from: ERC1155Owner
   # Empty to is burning
-  to: Owner
+  to: ERC1155Owner
+  timestamp: BigInt!
+  block: BigInt!
+  transactionHash: String!
+}
+
+type ERC721Token @entity {
+  id: ID!
+  numericId: BigInt!
+  owner: ERC721Owner
+  uri: String
+  meta: Metadata
+  transfers: [ERC721Transfer!]! @derivedFrom(field: "token")
+  contract: ERC721Contract
+}
+
+type ERC721Owner @entity {
+  id: ID!
+  ownedTokens: [ERC721Token!]! @derivedFrom(field: "owner")
+  balance: BigInt
+}
+
+type ERC721Contract @entity {
+  # 1
+  id: ID!
+  name: String
+  symbol: String
+  totalSupply: BigInt
+  mintedTokens: [ERC721Token!]! @derivedFrom(field: "contract")
+  contractURI: String
+  contractURIUpdated: BigInt
+  address: String
+  decimals: Int
+}
+
+type ERC721Transfer @entity {
+  # {txhash}-{txlogindex}
+  id: ID!
+  token: ERC721Token!
+  # Empty from is minting
+  from: ERC721Owner
+  # Empty to is burning
+  to: ERC721Owner
   timestamp: BigInt!
   block: BigInt!
   transactionHash: String!

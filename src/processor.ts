@@ -7,7 +7,7 @@ import * as mappings from './mappings'
 import { multiTransferFilter, singleTransferFilter, transferFilter } from './mappings/utils/evm'
 import { Contracts } from './processable'
 
-const startBlockNumber = 5000 
+const startBlockNumber = 568970 
 const processor = new SubstrateEvmProcessor("moonriver-substrate");
 
 processor.setBatchSize(500);
@@ -18,15 +18,11 @@ processor.setDataSource({
 processor.setBlockRange({ from: startBlockNumber })
 processor.setTypesBundle("moonbeam");
 
-// processor.addPreHook({ range: { from: 0, to: 0 } }, async (ctx) => {
-//   await ctx.store.save(createContractEntity());
-// });
-
 // processor.addPreHook({ range: { from: 0, to: 0 } }, mappings.forceCreateContract);
 
-// processor.addEvmLogHandler(Contracts.Moonsama, transferFilter, mappings.mainFrame);
-// processor.addEvmLogHandler(Contracts.Pondsama, transferFilter, mappings.mainFrame);
-// processor.addEvmLogHandler(Contracts.Plot, transferFilter, mappings.mainFrame);
+processor.addEvmLogHandler(Contracts.Moonsama, transferFilter, mappings.mainFrame);
+processor.addEvmLogHandler(Contracts.Pondsama, transferFilter, mappings.mainFrame);
+processor.addEvmLogHandler(Contracts.Plot, transferFilter, mappings.mainFrame);
 
 // processor.addEvmLogHandler(Contracts.Blvck, transferFilter, mappings.mainFrame); // TODO: handle separately
 

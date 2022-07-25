@@ -1,13 +1,13 @@
 import {Entity as Entity_, Column as Column_, PrimaryColumn as PrimaryColumn_, OneToMany as OneToMany_, ManyToOne as ManyToOne_, Index as Index_} from "typeorm"
 import * as marshal from "./marshal"
-import {TokenOwner} from "./tokenOwner.model"
+import {ERC1155TokenOwner} from "./erc1155TokenOwner.model"
 import {Metadata} from "./metadata.model"
-import {Transfer} from "./transfer.model"
-import {Contract} from "./contract.model"
+import {ERC1155Transfer} from "./erc1155Transfer.model"
+import {ERC1155Contract} from "./erc1155Contract.model"
 
 @Entity_()
-export class Token {
-  constructor(props?: Partial<Token>) {
+export class ERC1155Token {
+  constructor(props?: Partial<ERC1155Token>) {
     Object.assign(this, props)
   }
 
@@ -20,8 +20,8 @@ export class Token {
   @Column_("numeric", {transformer: marshal.bigintTransformer, nullable: false})
   numericId!: bigint
 
-  @OneToMany_(() => TokenOwner, e => e.token)
-  owners!: TokenOwner[]
+  @OneToMany_(() => ERC1155TokenOwner, e => e.token)
+  owners!: ERC1155TokenOwner[]
 
   @Column_("text", {nullable: true})
   uri!: string | undefined | null
@@ -30,10 +30,10 @@ export class Token {
   @ManyToOne_(() => Metadata, {nullable: true})
   meta!: Metadata | undefined | null
 
-  @OneToMany_(() => Transfer, e => e.token)
-  transfers!: Transfer[]
+  @OneToMany_(() => ERC1155Transfer, e => e.token)
+  transfers!: ERC1155Transfer[]
 
   @Index_()
-  @ManyToOne_(() => Contract, {nullable: true})
-  contract!: Contract | undefined | null
+  @ManyToOne_(() => ERC1155Contract, {nullable: true})
+  contract!: ERC1155Contract | undefined | null
 }
