@@ -18,6 +18,10 @@ export async function getTokenURI(contract: ethers.Contract, tokenId: string): P
   return retry(async () => timeout(contract.tokenURI(tokenId)));
 }
 
+export async function getURI(contract: ethers.Contract, tokenId: string): Promise<string> {
+  return retry(async () => timeout(contract.uri(tokenId)));
+}
+
 async function timeout<T>(res: Promise<T>, seconds = 200): Promise<T> {
   return new Promise((resolve, reject) => {
     let timer: NodeJS.Timeout|undefined = setTimeout(() => {

@@ -20,7 +20,7 @@ import {
   ERC721Transfer,
   ERC721Contract,
 } from "../model";
-import { provider, getTokenURI } from "../contract";
+import { provider, getTokenURI, getURI } from "../contract";
 import * as erc1155 from "../abi/erc1155";
 import * as erc721 from "../abi/erc721";
 import { sanitizeIpfsUrl, api } from "./utils/metadata";
@@ -72,13 +72,12 @@ export async function saveTransfers(context: Context): Promise<void> {
       contractURI: contractURI,
       contractURIUpdated: BigInt(timestamp),
     });
-  }
-  else{
-    contractData.name = name
-    contractData.symbol = symbol
-    contractData.totalSupply = totalSupply
-    contractData.contractURI = contractURI
-    contractData.contractURIUpdated = BigInt(timestamp)
+  } else {
+    contractData.name = name;
+    contractData.symbol = symbol;
+    contractData.totalSupply = totalSupply;
+    contractData.contractURI = contractURI;
+    contractData.contractURIUpdated = BigInt(timestamp);
   }
 
   let tokenURI: string = await getTokenURI(contract, tokenId.toString());
@@ -163,7 +162,7 @@ export async function saveSingleTransfers(context: Context): Promise<void> {
     });
   }
 
-  let tokenURI: string = await getTokenURI(contract, tokenIdString);
+  let tokenURI: string = await getURI(contract, tokenIdString);
 
   let metadata = await get(context.store, Metadata, tokenIdString);
   if (metadata == null) {
@@ -237,9 +236,10 @@ export async function saveSingleTransfers(context: Context): Promise<void> {
   recipientTokenOwner.balance = recipientTokenOwner.balance + bigintOf(amount);
 
   let transfer = await get(context.store, ERC1155Transfer, eventId);
+  let transferId = eventId + "-" + tokenId;
   if (transfer == null) {
     transfer = new ERC1155Transfer({
-      id: eventId,
+      id: transferId,
       block: BigInt(blockNumber),
       timestamp: BigInt(timestamp),
       transactionHash: txHash,
@@ -251,12 +251,12 @@ export async function saveSingleTransfers(context: Context): Promise<void> {
 
   await context.store.save(previousOwner);
   await context.store.save(currentOwner);
-  await context.store.save(senderTokenOwner);
-  await context.store.save(recipientTokenOwner);
   await context.store.save(contractData);
   await context.store.save(metadata);
   await context.store.save(token);
   await context.store.save(transfer);
+  await context.store.save(senderTokenOwner);
+  await context.store.save(recipientTokenOwner);
 }
 
 export async function saveMultipleTransfers(context: Context): Promise<void> {
@@ -284,7 +284,11 @@ export async function saveMultipleTransfers(context: Context): Promise<void> {
       currentOwner = new ERC1155Owner({ id: to.toLowerCase() });
     }
 
-    let contractData = await get(context.store, ERC1155Contract, contractAddress);
+    let contractData = await get(
+      context.store,
+      ERC1155Contract,
+      contractAddress
+    );
     const contract = new ethers.Contract(
       contractAddress,
       erc1155.abi,
@@ -300,7 +304,7 @@ export async function saveMultipleTransfers(context: Context): Promise<void> {
       });
     }
 
-    let tokenURI: string = await getTokenURI(contract, tokenIdString);
+    let tokenURI: string = await getURI(contract, tokenIdString);
 
     let metadata = await get(context.store, Metadata, tokenIdString);
     if (metadata == null) {
@@ -375,9 +379,11 @@ export async function saveMultipleTransfers(context: Context): Promise<void> {
       recipientTokenOwner.balance + bigintOf(amount);
 
     let transfer = await get(context.store, ERC1155Transfer, eventId);
+  let transferId = eventId + "-" + tokenId;
+
     if (transfer == null) {
       transfer = new ERC1155Transfer({
-        id: eventId,
+        id: transferId,
         block: BigInt(blockNumber),
         timestamp: BigInt(timestamp),
         transactionHash: txHash,
@@ -389,12 +395,12 @@ export async function saveMultipleTransfers(context: Context): Promise<void> {
 
     await context.store.save(previousOwner);
     await context.store.save(currentOwner);
-    await context.store.save(senderTokenOwner);
-    await context.store.save(recipientTokenOwner);
     await context.store.save(contractData);
     await context.store.save(metadata);
     await context.store.save(token);
     await context.store.save(transfer);
+    await context.store.save(senderTokenOwner);
+    await context.store.save(recipientTokenOwner);
   }
 }
 
