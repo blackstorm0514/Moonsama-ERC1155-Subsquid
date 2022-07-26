@@ -87,12 +87,12 @@ export async function saveTransfers(context: Context): Promise<void> {
   }
 
   let tokenURI: string = await getTokenURI(contract, tokenIdString);
-
-  let metadata = await get(context.store, Metadata, tokenIdString);
+  let metadatId = contractAddress + "-" + tokenIdString;
+  let metadata = await get(context.store, Metadata, metadatId);
   if (metadata == null) {
     const { status, data } = await api.get(sanitizeIpfsUrl(tokenURI));
     metadata = new Metadata({
-      id: tokenId.toHexString(),
+      id: metadatId,
       description: data.description || "",
       name: data.name || contractData.name,
       image: data.image,
@@ -104,11 +104,11 @@ export async function saveTransfers(context: Context): Promise<void> {
   let token = await get(
     context.store,
     ERC721Token,
-    contractAddress + ":" + tokenIdString
+    metadatId
   );
   if (token == null) {
     token = new ERC721Token({
-      id: contractAddress + ":" + tokenIdString,
+      id: metadatId,
       numericId: BigInt(tokenIdString),
       uri: tokenURI,
       meta: metadata,
@@ -117,7 +117,7 @@ export async function saveTransfers(context: Context): Promise<void> {
   }
   token.owner = currentOwner;
 
-  let transferId = eventId + "-" + tokenIdString;
+  let transferId = txHash + "-" + eventId + "-" + tokenIdString;
   let transfer = await get(context.store, ERC721Transfer, transferId);
   if (transfer == null) {
     transfer = new ERC721Transfer({
@@ -173,12 +173,12 @@ export async function saveSingleTransfers(context: Context): Promise<void> {
   }
 
   let tokenURI: string = await getURI(contract, tokenIdString);
-
-  let metadata = await get(context.store, Metadata, tokenIdString);
+  let metadatId = contractAddress + "-" + tokenIdString;
+  let metadata = await get(context.store, Metadata, metadatId);
   if (metadata == null) {
     const { status, data } = await api.get(sanitizeIpfsUrl(tokenURI));
     metadata = new Metadata({
-      id: tokenId.toHexString(),
+      id: metadatId,
       description: data.description || "",
       name: data.name || contractData.name,
       image: data.image,
@@ -190,11 +190,11 @@ export async function saveSingleTransfers(context: Context): Promise<void> {
   let token = await get(
     context.store,
     ERC1155Token,
-    contractAddress + ":" + tokenIdString
+    metadatId
   );
   if (token == null) {
     token = new ERC1155Token({
-      id: contractAddress + ":" + tokenIdString,
+      id: metadatId,
       numericId: BigInt(tokenIdString),
       uri: tokenURI,
       meta: metadata,
@@ -245,7 +245,7 @@ export async function saveSingleTransfers(context: Context): Promise<void> {
   // in case of 0x0000000000000000000000000000000000000000 it's the burned amount
   recipientTokenOwner.balance = recipientTokenOwner.balance + bigintOf(amount);
 
-  let transferId = eventId + "-" + tokenIdString;
+  let transferId = txHash + "-" + eventId + "-" + tokenIdString;
   let transfer = await get(context.store, ERC1155Transfer, transferId);
   if (transfer == null) {
     transfer = new ERC1155Transfer({
@@ -267,6 +267,7 @@ export async function saveSingleTransfers(context: Context): Promise<void> {
   await context.store.save(transfer);
   await context.store.save(senderTokenOwner);
   await context.store.save(recipientTokenOwner);
+  console.log("transfer1", transfer);
 }
 
 export async function saveMultipleTransfers(context: Context): Promise<void> {
@@ -311,12 +312,13 @@ export async function saveMultipleTransfers(context: Context): Promise<void> {
       });
     }
 
+    let metadatId = contractAddress + "-" + tokenIdString;
     let tokenURI: string = await getURI(contract, tokenIdString);
-    let metadata = await get(context.store, Metadata, tokenIdString);
+    let metadata = await get(context.store, Metadata, metadatId);
     if (metadata == null) {
       const { status, data } = await api.get(sanitizeIpfsUrl(tokenURI));
       metadata = new Metadata({
-        id: tokenId.toHexString(),
+        id: metadatId,
         description: data.description || "",
         name: data.name || contractData.name,
         image: data.image,
@@ -328,11 +330,11 @@ export async function saveMultipleTransfers(context: Context): Promise<void> {
     let token = await get(
       context.store,
       ERC1155Token,
-      contractAddress + ":" + tokenIdString
+      metadatId
     );
     if (token == null) {
       token = new ERC1155Token({
-        id: contractAddress + ":" + tokenIdString,
+        id: metadatId,
         numericId: BigInt(tokenIdString),
         uri: tokenURI,
         meta: metadata,
@@ -342,7 +344,7 @@ export async function saveMultipleTransfers(context: Context): Promise<void> {
     let totalSupply = await getERC1155TotalSupply(contract, tokenIdString);
     token.totalSupply = bigintOf(totalSupply);
 
-    let transferId = eventId + "-" + tokenIdString;
+    let transferId = txHash + "-" + eventId + "-" + tokenIdString;
     let transfer = await get(context.store, ERC1155Transfer, transferId);
     if (transfer == null) {
       transfer = new ERC1155Transfer({
@@ -404,6 +406,7 @@ export async function saveMultipleTransfers(context: Context): Promise<void> {
     await context.store.save(transfer);
     await context.store.save(senderTokenOwner);
     await context.store.save(recipientTokenOwner);
+    console.log("transfer2", transfer);
   }
 }
 
