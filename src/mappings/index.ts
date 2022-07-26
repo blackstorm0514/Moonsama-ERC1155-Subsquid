@@ -32,7 +32,7 @@ import { sanitizeIpfsUrl, api } from "./utils/metadata";
 
 export async function saveTransfers(context: Context): Promise<void> {
   const blockNumber = context.substrate.block.height.toString();
-  const timestamp = context.substrate.block.timestamp.toString();
+  const timestamp = context.substrate.block.timestamp.toString().replace('n', '');
   const txHash = context.txHash;
   const { from, to, tokenId } = decode721Transfer(context);
   const contractAddress = contractOf(context);
@@ -117,11 +117,11 @@ export async function saveTransfers(context: Context): Promise<void> {
   }
   token.owner = currentOwner;
 
-  let transferId = txHash + "-" + eventId + "-" + tokenIdString;
+  let transferId = txHash + "-" + eventId;
   let transfer = await get(context.store, ERC721Transfer, transferId);
   if (transfer == null) {
     transfer = new ERC721Transfer({
-      id: eventId,
+      id: transferId,
       block: BigInt(blockNumber),
       timestamp: BigInt(timestamp),
       transactionHash: txHash,
@@ -137,11 +137,12 @@ export async function saveTransfers(context: Context): Promise<void> {
   await context.store.save(metadata);
   await context.store.save(token);
   await context.store.save(transfer);
+  console.log("ERC721Transfer", transfer)
 }
 
 export async function saveSingleTransfers(context: Context): Promise<void> {
   const blockNumber = context.substrate.block.height.toString();
-  const timestamp = context.substrate.block.timestamp.toString();
+  const timestamp = context.substrate.block.timestamp.toString().replace('n', '');
   const txHash = context.txHash;
   const { operator, from, to, id, value } = decode1155SingleTransfer(context);
   let amount = value;
@@ -245,7 +246,7 @@ export async function saveSingleTransfers(context: Context): Promise<void> {
   // in case of 0x0000000000000000000000000000000000000000 it's the burned amount
   recipientTokenOwner.balance = recipientTokenOwner.balance + bigintOf(amount);
 
-  let transferId = txHash + "-" + eventId + "-" + tokenIdString;
+  let transferId = txHash + "-" + eventId;
   let transfer = await get(context.store, ERC1155Transfer, transferId);
   if (transfer == null) {
     transfer = new ERC1155Transfer({
@@ -272,7 +273,7 @@ export async function saveSingleTransfers(context: Context): Promise<void> {
 
 export async function saveMultipleTransfers(context: Context): Promise<void> {
   const blockNumber = context.substrate.block.height.toString();
-  const timestamp = context.substrate.block.timestamp.toString();
+  const timestamp = context.substrate.block.timestamp.toString().replace('n', '');
   const txHash = context.txHash;
   const { operator, from, to, ids, values } = decode1155MultiTransfer(context);
   let amounts = values;
@@ -344,7 +345,7 @@ export async function saveMultipleTransfers(context: Context): Promise<void> {
     let totalSupply = await getERC1155TotalSupply(contract, tokenIdString);
     token.totalSupply = bigintOf(totalSupply);
 
-    let transferId = txHash + "-" + eventId + "-" + tokenIdString;
+    let transferId = txHash + "-" + eventId;
     let transfer = await get(context.store, ERC1155Transfer, transferId);
     if (transfer == null) {
       transfer = new ERC1155Transfer({
