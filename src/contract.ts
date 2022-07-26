@@ -22,7 +22,11 @@ export async function getURI(contract: ethers.Contract, tokenId: string): Promis
   return retry(async () => timeout(contract.uri(tokenId)));
 }
 
-async function timeout<T>(res: Promise<T>, seconds = 200): Promise<T> {
+export async function getERC1155TotalSupply(contract: ethers.Contract, tokenId: string): Promise<ethers.BigNumber> {
+  return retry(async () => timeout(contract.totalSupply(tokenId)));
+}
+
+async function timeout<T>(res: Promise<T>, seconds = 600): Promise<T> {
   return new Promise((resolve, reject) => {
     let timer: NodeJS.Timeout|undefined = setTimeout(() => {
       timer = undefined;

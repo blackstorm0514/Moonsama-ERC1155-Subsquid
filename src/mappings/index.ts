@@ -20,7 +20,12 @@ import {
   ERC721Transfer,
   ERC721Contract,
 } from "../model";
-import { provider, getTokenURI, getURI } from "../contract";
+import {
+  provider,
+  getTokenURI,
+  getURI,
+  getERC1155TotalSupply,
+} from "../contract";
 import * as erc1155 from "../abi/erc1155";
 import * as erc721 from "../abi/erc721";
 import { sanitizeIpfsUrl, api } from "./utils/metadata";
@@ -32,6 +37,7 @@ export async function saveTransfers(context: Context): Promise<void> {
   const { from, to, tokenId } = decode721Transfer(context);
   const contractAddress = contractOf(context);
   const eventId = context.substrate.event.id;
+  const tokenIdString = tokenId.toString();
 
   let previousOwner = await get(context.store, ERC721Owner, from);
   if (previousOwner == null) {
@@ -80,9 +86,9 @@ export async function saveTransfers(context: Context): Promise<void> {
     contractData.contractURIUpdated = BigInt(timestamp);
   }
 
-  let tokenURI: string = await getTokenURI(contract, tokenId.toString());
+  let tokenURI: string = await getTokenURI(contract, tokenIdString);
 
-  let metadata = await get(context.store, Metadata, tokenId.toString());
+  let metadata = await get(context.store, Metadata, tokenIdString);
   if (metadata == null) {
     const { status, data } = await api.get(sanitizeIpfsUrl(tokenURI));
     metadata = new Metadata({
@@ -98,12 +104,12 @@ export async function saveTransfers(context: Context): Promise<void> {
   let token = await get(
     context.store,
     ERC721Token,
-    contractAddress + ":" + tokenId.toString()
+    contractAddress + ":" + tokenIdString
   );
   if (token == null) {
     token = new ERC721Token({
-      id: contractAddress + ":" + tokenId.toString(),
-      numericId: BigInt(tokenId.toString()),
+      id: contractAddress + ":" + tokenIdString,
+      numericId: BigInt(tokenIdString),
       uri: tokenURI,
       meta: metadata,
       contract: contractData,
@@ -111,15 +117,19 @@ export async function saveTransfers(context: Context): Promise<void> {
   }
   token.owner = currentOwner;
 
-  const transfer = new ERC721Transfer({
-    id: eventId,
-    block: BigInt(blockNumber),
-    timestamp: BigInt(timestamp),
-    transactionHash: txHash,
-    from: previousOwner,
-    to: currentOwner,
-    token,
-  });
+  let transferId = eventId + "-" + tokenIdString;
+  let transfer = await get(context.store, ERC721Transfer, transferId);
+  if (transfer == null) {
+    transfer = new ERC721Transfer({
+      id: eventId,
+      block: BigInt(blockNumber),
+      timestamp: BigInt(timestamp),
+      transactionHash: txHash,
+      from: previousOwner,
+      to: currentOwner,
+      token,
+    });
+  }
 
   await context.store.save(previousOwner);
   await context.store.save(currentOwner);
@@ -192,8 +202,8 @@ export async function saveSingleTransfers(context: Context): Promise<void> {
     });
   }
 
-  let totalSupply = await contract.totalSupply(tokenId);
-  token.totalSupply = totalSupply;
+  let totalSupply = await getERC1155TotalSupply(contract, tokenIdString);
+  token.totalSupply = bigintOf(totalSupply);
 
   let senderTokenOwnerId = from.concat("-").concat(tokenIdString);
   let senderTokenOwner = await get(
@@ -235,8 +245,8 @@ export async function saveSingleTransfers(context: Context): Promise<void> {
   // in case of 0x0000000000000000000000000000000000000000 it's the burned amount
   recipientTokenOwner.balance = recipientTokenOwner.balance + bigintOf(amount);
 
-  let transfer = await get(context.store, ERC1155Transfer, eventId);
-  let transferId = eventId + "-" + tokenId;
+  let transferId = eventId + "-" + tokenIdString;
+  let transfer = await get(context.store, ERC1155Transfer, transferId);
   if (transfer == null) {
     transfer = new ERC1155Transfer({
       id: transferId,
@@ -272,6 +282,10 @@ export async function saveMultipleTransfers(context: Context): Promise<void> {
   let previousOwner = await get(context.store, ERC1155Owner, from);
   let currentOwner = await get(context.store, ERC1155Owner, to);
 
+  const contract = new ethers.Contract(contractAddress, erc1155.abi, provider);
+  let name = await contract.name();
+  let symbol = await contract.symbol();
+
   for (let i = 0; i < tokenIds.length; i++) {
     let tokenId = tokenIds[i];
     let tokenIdString = tokenId.toString();
@@ -289,13 +303,6 @@ export async function saveMultipleTransfers(context: Context): Promise<void> {
       ERC1155Contract,
       contractAddress
     );
-    const contract = new ethers.Contract(
-      contractAddress,
-      erc1155.abi,
-      provider
-    );
-    let name = await contract.name();
-    let symbol = await contract.symbol();
     if (contractData == null) {
       contractData = new ERC1155Contract({
         id: contractAddress,
@@ -305,7 +312,6 @@ export async function saveMultipleTransfers(context: Context): Promise<void> {
     }
 
     let tokenURI: string = await getURI(contract, tokenIdString);
-
     let metadata = await get(context.store, Metadata, tokenIdString);
     if (metadata == null) {
       const { status, data } = await api.get(sanitizeIpfsUrl(tokenURI));
@@ -333,9 +339,22 @@ export async function saveMultipleTransfers(context: Context): Promise<void> {
         contract: contractData,
       });
     }
+    let totalSupply = await getERC1155TotalSupply(contract, tokenIdString);
+    token.totalSupply = bigintOf(totalSupply);
 
-    let totalSupply = await contract.totalSupply(tokenId);
-    token.totalSupply = totalSupply;
+    let transferId = eventId + "-" + tokenIdString;
+    let transfer = await get(context.store, ERC1155Transfer, transferId);
+    if (transfer == null) {
+      transfer = new ERC1155Transfer({
+        id: transferId,
+        block: BigInt(blockNumber),
+        timestamp: BigInt(timestamp),
+        transactionHash: txHash,
+        from: previousOwner,
+        to: currentOwner,
+        token,
+      });
+    }
 
     let senderTokenOwnerId = from.concat("-").concat(tokenIdString);
     let senderTokenOwner = await get(
@@ -351,7 +370,6 @@ export async function saveMultipleTransfers(context: Context): Promise<void> {
     }
     senderTokenOwner.owner = previousOwner;
     senderTokenOwner.token = token;
-
     // if we mint tokens, we don't mark it
     // total minted ever can be caluclated by totalSupply + burned amount
     if (previousOwner.id != "0x0000000000000000000000000000000000000000") {
@@ -377,21 +395,6 @@ export async function saveMultipleTransfers(context: Context): Promise<void> {
     // in case of 0x0000000000000000000000000000000000000000 it's the burned amount
     recipientTokenOwner.balance =
       recipientTokenOwner.balance + bigintOf(amount);
-
-    let transfer = await get(context.store, ERC1155Transfer, eventId);
-  let transferId = eventId + "-" + tokenId;
-
-    if (transfer == null) {
-      transfer = new ERC1155Transfer({
-        id: transferId,
-        block: BigInt(blockNumber),
-        timestamp: BigInt(timestamp),
-        transactionHash: txHash,
-        from: previousOwner,
-        to: currentOwner,
-        token,
-      });
-    }
 
     await context.store.save(previousOwner);
     await context.store.save(currentOwner);
