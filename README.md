@@ -168,6 +168,7 @@ npx squid-evm-typegen --abi ./src/abi/ERC1155.json --output ./src/abi/erc1155.ts
 
 
 npm ci
+npx sqd codegen
 npm run build
 docker compose up -d
 npx squid-typeorm-migration apply

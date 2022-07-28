@@ -45,7 +45,12 @@ type ERC1155Contract @entity {
   id: ID!
   name: String
   symbol: String
+  totalSupply: BigInt
   mintedTokens: [ERC1155Token!]! @derivedFrom(field: "contract")
+  contractURI: String
+  contractURIUpdated: BigInt
+  address: String
+  decimals: Int
 }
 
 type ERC1155Transfer @entity {
@@ -78,7 +83,7 @@ type ERC721Owner @entity {
 }
 
 type ERC721Contract @entity {
-  # 1
+  # {contract address}
   id: ID!
   name: String
   symbol: String

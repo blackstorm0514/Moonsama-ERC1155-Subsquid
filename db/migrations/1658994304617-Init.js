@@ -1,5 +1,5 @@
-module.exports = class Init1658824626498 {
-  name = 'Init1658824626498'
+module.exports = class Init1658994304617 {
+  name = 'Init1658994304617'
 
   async up(db) {
     await db.query(`CREATE TABLE "erc1155_owner" ("id" character varying NOT NULL, CONSTRAINT "PK_1edcc74b7820dd0d897b9d92171" PRIMARY KEY ("id"))`)
@@ -11,7 +11,7 @@ module.exports = class Init1658824626498 {
     await db.query(`CREATE INDEX "IDX_73c0abeaec03ddf4d11b840721" ON "erc1155_transfer" ("token_id") `)
     await db.query(`CREATE INDEX "IDX_0d2e8f94d7d57de35fbefa0c1c" ON "erc1155_transfer" ("from_id") `)
     await db.query(`CREATE INDEX "IDX_889c304916fe3fec132ecec073" ON "erc1155_transfer" ("to_id") `)
-    await db.query(`CREATE TABLE "erc1155_contract" ("id" character varying NOT NULL, "name" text, "symbol" text, CONSTRAINT "PK_714a9ea4826d73898b5c2251116" PRIMARY KEY ("id"))`)
+    await db.query(`CREATE TABLE "erc1155_contract" ("id" character varying NOT NULL, "name" text, "symbol" text, "total_supply" numeric, "contract_uri" text, "contract_uri_updated" numeric, "address" text, "decimals" integer, CONSTRAINT "PK_714a9ea4826d73898b5c2251116" PRIMARY KEY ("id"))`)
     await db.query(`CREATE TABLE "erc1155_token" ("id" character varying NOT NULL, "total_supply" numeric, "numeric_id" numeric NOT NULL, "uri" text, "meta_id" character varying, "contract_id" character varying, CONSTRAINT "PK_63124737654b07d068bf54cfcfe" PRIMARY KEY ("id"))`)
     await db.query(`CREATE INDEX "IDX_8fa24bdfcefd9405194d8b976b" ON "erc1155_token" ("meta_id") `)
     await db.query(`CREATE INDEX "IDX_2b7ca9f92b256b0bf702d11e50" ON "erc1155_token" ("contract_id") `)

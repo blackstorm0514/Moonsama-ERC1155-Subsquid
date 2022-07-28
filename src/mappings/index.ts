@@ -30,7 +30,7 @@ import * as erc1155 from "../abi/erc1155";
 import * as erc721 from "../abi/erc721";
 import { sanitizeIpfsUrl, api } from "./utils/metadata";
 
-export async function saveTransfers(context: Context): Promise<void> {
+export async function saveERC721Transfers(context: Context): Promise<void> {
   const blockNumber = context.substrate.block.height.toString();
   let timestamp = BigInt(context.substrate.block.timestamp.toString());
   timestamp /= BigInt(1000);
@@ -141,7 +141,7 @@ export async function saveTransfers(context: Context): Promise<void> {
   console.log("ERC721Transfer", transfer)
 }
 
-export async function saveSingleTransfers(context: Context): Promise<void> {
+export async function saveERC1155SingleTransfers(context: Context): Promise<void> {
   const blockNumber = context.substrate.block.height.toString();
   let timestamp = BigInt(context.substrate.block.timestamp.toString());
   timestamp /= BigInt(1000);
@@ -157,7 +157,9 @@ export async function saveSingleTransfers(context: Context): Promise<void> {
   const contract = new ethers.Contract(contractAddress, erc1155.abi, provider);
   let name = await contract.name();
   let symbol = await contract.symbol();
-  
+  let contractTotalSupply = await contract.totalSupply();
+  let contractURI = await contract.contractURI();
+
   let previousOwner = await get(context.store, ERC1155Owner, from);
   if (previousOwner == null) {
     previousOwner = new ERC1155Owner({ id: from.toLowerCase() });
@@ -172,9 +174,20 @@ export async function saveSingleTransfers(context: Context): Promise<void> {
   if (contractData == null) {
     contractData = new ERC1155Contract({
       id: contractAddress,
+      address: contractAddress,
       name: name,
       symbol: symbol,
+      totalSupply: contractTotalSupply,
+      decimals: 0,
+      contractURI: contractURI,
+      contractURIUpdated: timestamp,
     });
+  } else {
+    contractData.name = name;
+    contractData.symbol = symbol;
+    contractData.totalSupply = contractTotalSupply;
+    contractData.contractURI = contractURI;
+    contractData.contractURIUpdated = timestamp;
   }
 
   let tokenURI: string = await getURI(contract, tokenIdString);
@@ -273,7 +286,7 @@ export async function saveSingleTransfers(context: Context): Promise<void> {
   console.log("transfer1", transfer);
 }
 
-export async function saveMultipleTransfers(context: Context): Promise<void> {
+export async function saveERC1155MultipleTransfers(context: Context): Promise<void> {
   const blockNumber = context.substrate.block.height.toString();
   let timestamp = BigInt(context.substrate.block.timestamp.toString());
   timestamp /= BigInt(1000);
@@ -290,6 +303,8 @@ export async function saveMultipleTransfers(context: Context): Promise<void> {
   const contract = new ethers.Contract(contractAddress, erc1155.abi, provider);
   let name = await contract.name();
   let symbol = await contract.symbol();
+  let contractTotalSupply = await contract.totalSupply();
+  let contractURI = await contract.contractURI();
 
   for (let i = 0; i < tokenIds.length; i++) {
     let tokenId = tokenIds[i];
@@ -311,10 +326,22 @@ export async function saveMultipleTransfers(context: Context): Promise<void> {
     if (contractData == null) {
       contractData = new ERC1155Contract({
         id: contractAddress,
+        address: contractAddress,
         name: name,
         symbol: symbol,
+        totalSupply: contractTotalSupply,
+        decimals: 0,
+        contractURI: contractURI,
+        contractURIUpdated: timestamp,
       });
+    } else {
+      contractData.name = name;
+      contractData.symbol = symbol;
+      contractData.totalSupply = contractTotalSupply;
+      contractData.contractURI = contractURI;
+      contractData.contractURIUpdated = timestamp;
     }
+
     let metadatId = contractAddress + "-" + tokenIdString;
     let tokenURI: string = await getURI(contract, tokenIdString);
     let metadata = await get(context.store, Metadata, metadatId);
@@ -411,19 +438,4 @@ export async function saveMultipleTransfers(context: Context): Promise<void> {
     await context.store.save(recipientTokenOwner);
     console.log("transfer2", transfer);
   }
-}
-
-export async function mainFrame(ctx: Context): Promise<void> {
-  const transfer = decode721Transfer(ctx);
-  await saveTransfers(ctx);
-}
-
-export async function singleMainFrame(ctx: Context): Promise<void> {
-  const transfer = decode1155SingleTransfer(ctx);
-  await saveSingleTransfers(ctx);
-}
-
-export async function mutliMainFrame(ctx: Context): Promise<void> {
-  const transfer = decode1155MultiTransfer(ctx);
-  await saveMultipleTransfers(ctx);
 }
