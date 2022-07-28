@@ -17,8 +17,8 @@ export class ERC1155Contract {
   @Column_("text", {nullable: true})
   symbol!: string | undefined | null
 
-  @Column_("numeric", {transformer: marshal.bigintTransformer, nullable: true})
-  totalSupply!: bigint | undefined | null
+  @Column_("numeric", {transformer: marshal.bigintTransformer, nullable: false})
+  totalSupply!: bigint
 
   @OneToMany_(() => ERC1155Token, e => e.contract)
   mintedTokens!: ERC1155Token[]

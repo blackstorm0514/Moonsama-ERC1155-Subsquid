@@ -157,7 +157,6 @@ export async function saveERC1155SingleTransfers(context: Context): Promise<void
   const contract = new ethers.Contract(contractAddress, erc1155.abi, provider);
   let name = await contract.name();
   let symbol = await contract.symbol();
-  let contractTotalSupply = await contract.totalSupply();
   let contractURI = await contract.contractURI();
 
   let previousOwner = await get(context.store, ERC1155Owner, from);
@@ -177,12 +176,13 @@ export async function saveERC1155SingleTransfers(context: Context): Promise<void
       address: contractAddress,
       name: name,
       symbol: symbol,
-      totalSupply: contractTotalSupply,
+      totalSupply: BigInt(0),
       decimals: 0,
       contractURI: contractURI,
       contractURIUpdated: timestamp,
     });
   } else {
+    let contractTotalSupply = BigInt(tokenIdString) > contractData.totalSupply ? BigInt(tokenIdString) : contractData.totalSupply
     contractData.name = name;
     contractData.symbol = symbol;
     contractData.totalSupply = contractTotalSupply;
@@ -283,7 +283,7 @@ export async function saveERC1155SingleTransfers(context: Context): Promise<void
   await context.store.save(transfer);
   await context.store.save(senderTokenOwner);
   await context.store.save(recipientTokenOwner);
-  console.log("transfer1", transfer);
+  console.log("transfer1", contractData);
 }
 
 export async function saveERC1155MultipleTransfers(context: Context): Promise<void> {
@@ -303,7 +303,6 @@ export async function saveERC1155MultipleTransfers(context: Context): Promise<vo
   const contract = new ethers.Contract(contractAddress, erc1155.abi, provider);
   let name = await contract.name();
   let symbol = await contract.symbol();
-  let contractTotalSupply = await contract.totalSupply();
   let contractURI = await contract.contractURI();
 
   for (let i = 0; i < tokenIds.length; i++) {
@@ -329,18 +328,20 @@ export async function saveERC1155MultipleTransfers(context: Context): Promise<vo
         address: contractAddress,
         name: name,
         symbol: symbol,
-        totalSupply: contractTotalSupply,
+        totalSupply: BigInt(1),
         decimals: 0,
         contractURI: contractURI,
         contractURIUpdated: timestamp,
       });
     } else {
+      let contractTotalSupply = BigInt(tokenIdString) > contractData.totalSupply ? BigInt(tokenIdString) : contractData.totalSupply
       contractData.name = name;
       contractData.symbol = symbol;
       contractData.totalSupply = contractTotalSupply;
       contractData.contractURI = contractURI;
       contractData.contractURIUpdated = timestamp;
     }
+  
 
     let metadatId = contractAddress + "-" + tokenIdString;
     let tokenURI: string = await getURI(contract, tokenIdString);
@@ -436,6 +437,6 @@ export async function saveERC1155MultipleTransfers(context: Context): Promise<vo
     await context.store.save(transfer);
     await context.store.save(senderTokenOwner);
     await context.store.save(recipientTokenOwner);
-    console.log("transfer2", transfer);
+    console.log("transfer2", contractData);
   }
 }
