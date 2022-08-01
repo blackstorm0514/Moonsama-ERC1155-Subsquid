@@ -7,7 +7,7 @@ import * as mappings from './mappings'
 import { multiTransferFilter, singleTransferFilter, transferFilter } from './mappings/utils/evm'
 import { Contracts } from './processable'
 
-const startBlockNumber = 568970 
+const startBlockNumber = 1241477 
 const processor = new SubstrateEvmProcessor("moonriver-substrate");
 
 processor.setBatchSize(500);
@@ -18,9 +18,9 @@ processor.setDataSource({
 processor.setBlockRange({ from: startBlockNumber })
 processor.setTypesBundle("moonbeam");
 
-processor.addEvmLogHandler(Contracts.Moonsama, transferFilter, mappings.saveERC721Transfers);
+// processor.addEvmLogHandler(Contracts.Moonsama, transferFilter, mappings.saveERC721Transfers);
 // processor.addEvmLogHandler(Contracts.Pondsama, transferFilter, mappings.saveERC721Transfers);
-// processor.addEvmLogHandler(Contracts.Plot, transferFilter, mappings.saveERC721Transfers);
+processor.addEvmLogHandler(Contracts.Plot, transferFilter, mappings.saveERC721Transfers);
 
 // // processor.addEvmLogHandler(Contracts.Blvck, transferFilter, mappings.mainFrame); // TODO: handle separately
 
