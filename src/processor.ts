@@ -7,7 +7,7 @@ import * as mappings from './mappings'
 import { multiTransferFilter, singleTransferFilter, transferFilter } from './mappings/utils/evm'
 import { Contracts } from './processable'
 
-const startBlockNumber = 664200 
+const startBlockNumber = 1027541 
 const processor = new SubstrateEvmProcessor("moonriver-substrate");
 
 processor.setBatchSize(500);
@@ -24,15 +24,15 @@ processor.setTypesBundle("moonbeam");
 
 // // processor.addEvmLogHandler(Contracts.Blvck, transferFilter, mappings.mainFrame); // TODO: handle separately
 
-processor.addEvmLogHandler(Contracts.Moonx, singleTransferFilter, mappings.saveERC1155SingleTransfers);
+// processor.addEvmLogHandler(Contracts.Moonx, singleTransferFilter, mappings.saveERC1155SingleTransfers);
 // processor.addEvmLogHandler(Contracts.Factory, singleTransferFilter, mappings.saveERC1155SingleTransfers);
-// processor.addEvmLogHandler(Contracts.Art, singleTransferFilter, mappings.saveERC1155SingleTransfers);
+processor.addEvmLogHandler(Contracts.Art, singleTransferFilter, mappings.saveERC1155SingleTransfers);
 // processor.addEvmLogHandler(Contracts.Box, singleTransferFilter, mappings.saveERC1155SingleTransfers);
 // processor.addEvmLogHandler(Contracts.Embassy, singleTransferFilter, mappings.saveERC1155SingleTransfers);
 
-processor.addEvmLogHandler(Contracts.Moonx, multiTransferFilter, mappings.saveERC1155MultipleTransfers);
+// processor.addEvmLogHandler(Contracts.Moonx, multiTransferFilter, mappings.saveERC1155MultipleTransfers);
 // processor.addEvmLogHandler(Contracts.Factory, multiTransferFilter, mappings.saveERC1155MultipleTransfers);
-// processor.addEvmLogHandler(Contracts.Art, multiTransferFilter, mappings.saveERC1155MultipleTransfers);
+processor.addEvmLogHandler(Contracts.Art, multiTransferFilter, mappings.saveERC1155MultipleTransfers);
 // processor.addEvmLogHandler(Contracts.Box, multiTransferFilter, mappings.saveERC1155MultipleTransfers);
 // processor.addEvmLogHandler(Contracts.Embassy, multiTransferFilter, mappings.saveERC1155MultipleTransfers);
 
