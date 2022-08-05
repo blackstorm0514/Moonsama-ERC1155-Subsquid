@@ -158,6 +158,7 @@ export async function saveERC1155SingleTransfers(context: Context): Promise<void
   let name = await contract.name();
   let symbol = await contract.symbol();
   let contractURI = await contract.contractURI();
+  let decimals = await contract.decimals()
 
   let previousOwner = await get(context.store, ERC1155Owner, from);
   if (previousOwner == null) {
@@ -177,7 +178,7 @@ export async function saveERC1155SingleTransfers(context: Context): Promise<void
       name: name,
       symbol: symbol,
       totalSupply: BigInt(0),
-      decimals: 0,
+      decimals: decimals,
       contractURI: contractURI,
       contractURIUpdated: timestamp,
     });
@@ -304,6 +305,7 @@ export async function saveERC1155MultipleTransfers(context: Context): Promise<vo
   let name = await contract.name();
   let symbol = await contract.symbol();
   let contractURI = await contract.contractURI();
+  let decimals = await contract.decimals()
 
   for (let i = 0; i < tokenIds.length; i++) {
     let tokenId = tokenIds[i];
@@ -329,7 +331,7 @@ export async function saveERC1155MultipleTransfers(context: Context): Promise<vo
         name: name,
         symbol: symbol,
         totalSupply: BigInt(1),
-        decimals: 0,
+        decimals: decimals,
         contractURI: contractURI,
         contractURIUpdated: timestamp,
       });
